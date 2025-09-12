@@ -1,47 +1,91 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { uid } from "../utils/uid";
 
-const AddTaskDialog = ({ onAddTask, statuses }) => {
+const STATUSES = ["PENDING", "FINISHED", "ON-TRACK"];
+
+export default function AddTaskDialog({ dispatch, onClose }) {
   const [title, setTitle] = useState("");
   const [group, setGroup] = useState("");
-  const [status, setStatus] = useState(statuses[0]);
+  const [deadline, setDeadline] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState(STATUSES[0]); 
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    onAddTask({ title, group: group.trim() || "General", status });
+  const handleSubmit = () => {
+    if (!title.trim()) {
+      alert("Please enter a title");
+      return;
+    }
+
+    dispatch({
+      type: "ADD_TASK",
+      payload: {
+        id: uid(),
+        title: title.trim(),
+        group: group.trim() || "", 
+        deadline: deadline || null,
+        description: description.trim(),
+        status: status, 
+      },
+    });
+    onClose();
+
+    // reset local form state
     setTitle("");
     setGroup("");
-    setStatus(statuses[0]);
+    setDeadline("");
+    setDescription("");
+    setStatus(STATUSES[0]);
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
-      <input
-        type="text"
-        placeholder="Task title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-      />
+    <div style={overlayStyle}>
+      <div style={dialogStyle}>
+        <h3>Add Task</h3>
 
-      <input
-        type="text"
-        placeholder="Task group (optional)"
-        value={group}
-        onChange={(e) => setGroup(e.target.value)}
-      />
+        <input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
 
-      <select value={status} onChange={(e) => setStatus(e.target.value)}>
-        {statuses.map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
-      </select>
+        <input placeholder="Group (optional)" value={group} onChange={(e) => setGroup(e.target.value)} />
 
-      <button type="submit">Add Task</button>
-    </form>
+        <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+
+        <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+
+        {/* select for fixed statuses */}
+        <div>
+          <label style={{ fontSize: 13, color: "#444" }}>Status</label>
+          <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: "100%", marginTop: 6 }}>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginTop: "1rem", display: "flex", gap: 8 }}>
+          <button onClick={handleSubmit}>Save</button>
+          <button onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
   );
+}
+
+const overlayStyle = {
+  position: "fixed",
+  inset: 0,
+  backgroundColor: "rgba(0,0,0,0.5)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
 };
 
-export default AddTaskDialog;
+const dialogStyle = {
+  background: "#fff",
+  padding: "1rem",
+  borderRadius: "8px",
+  width: "400px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.5rem",
+};

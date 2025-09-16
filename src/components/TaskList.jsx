@@ -7,10 +7,7 @@ export default function TaskList({ tasks, dispatch, onSelect }) {
         <p>No tasks yet</p>
       ) : (
         tasks.map((task) => (
-          <TaskItem
-            key={task.id}
-            task={task}
-            dispatch={dispatch}
+          <TaskItem key={task.id}  task={task}  dispatch={dispatch}
             onSelect={onSelect}
           />
         ))

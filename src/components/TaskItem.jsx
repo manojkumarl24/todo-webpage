@@ -1,13 +1,8 @@
 export default function TaskItem({ task, dispatch, onSelect }) {
   return (
     <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "0.5rem",
-        borderBottom: "1px solid #ddd",
-        cursor: "pointer"
-      }}
+      style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem", borderBottom: "1px solid #ddd",
+        cursor: "pointer" }}
       onClick={() => onSelect(task)}
     >
       <span>{task.title}</span>
@@ -21,10 +16,9 @@ export default function TaskItem({ task, dispatch, onSelect }) {
         >
           ✏️
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            dispatch({ type: "DELETE_TASK", payload: task.id });
+        <button onClick={(e) => {
+                  e.stopPropagation(); 
+                  dispatch({ type: "DELETE_TASK", payload: task.id });
           }}
         >
           🗑️

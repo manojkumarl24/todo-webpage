@@ -1,14 +1,13 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { uid } from "../utils/uid";
+import { PRIORITIES, DEFAULT_STATUS } from "../constants";
 
-const STATUSES = ["PENDING", "FINISHED", "ON-TRACK"];
-
-export default function AddTaskDialog({ dispatch, onClose }) {
+export default function AddTaskDialog({ onClose = () => {}, onAddTask, dispatch }) {
   const [title, setTitle] = useState("");
   const [group, setGroup] = useState("");
   const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState(STATUSES[0]); 
+  const [priority, setPriority] = useState(PRIORITIES[1] || "MEDIUM");
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -16,25 +15,32 @@ export default function AddTaskDialog({ dispatch, onClose }) {
       return;
     }
 
-    dispatch({
-      type: "ADD_TASK",
-      payload: {
-        id: uid(),
-        title: title.trim(),
-        group: group.trim() || "", 
-        deadline: deadline || null,
-        description: description.trim(),
-        status: status, 
-      },
-    });
-    onClose();
+    const payload = {
+      id: uid(),
+      title: title.trim(),
+      group: group.trim(),
+      deadline: deadline || null,
+      description: description.trim(),
+      priority,
+      progress: 0, // default
+      status: DEFAULT_STATUS,
+      createdAt: new Date().toISOString()
+    };
 
-    // reset local form state
+    if (typeof onAddTask === "function") {
+      onAddTask(payload);
+    } else if (typeof dispatch === "function") {
+      dispatch({ type: "ADD_TASK", payload });
+    } else {
+      console.warn("No onAddTask or dispatch provided, task not saved", payload);
+    }
+
     setTitle("");
     setGroup("");
     setDeadline("");
     setDescription("");
-    setStatus(STATUSES[0]);
+    setPriority(PRIORITIES[1] || "MEDIUM");
+    onClose();
   };
 
   return (
@@ -43,26 +49,22 @@ export default function AddTaskDialog({ dispatch, onClose }) {
         <h3>Add Task</h3>
 
         <input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-
         <input placeholder="Group (optional)" value={group} onChange={(e) => setGroup(e.target.value)} />
-
         <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-
         <textarea placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
 
-        {/* select for fixed statuses */}
         <div>
-          <label style={{ fontSize: 13, color: "#444" }}>Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)} style={{ width: "100%", marginTop: 6 }}>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
+          <label style={{ fontSize: 13, color: "#333" }}>Priority</label>
+          <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+            {PRIORITIES.map((p) => (
+              <option key={p} value={p}>
+                {p}
               </option>
             ))}
           </select>
         </div>
 
-        <div style={{ marginTop: "1rem", display: "flex", gap: 8 }}>
+        <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
           <button onClick={handleSubmit}>Save</button>
           <button onClick={onClose}>Cancel</button>
         </div>
@@ -77,15 +79,14 @@ const overlayStyle = {
   backgroundColor: "rgba(0,0,0,0.5)",
   display: "flex",
   justifyContent: "center",
-  alignItems: "center",
+  alignItems: "center"
 };
-
 const dialogStyle = {
   background: "#fff",
   padding: "1rem",
   borderRadius: "8px",
-  width: "400px",
+  width: "420px",
   display: "flex",
   flexDirection: "column",
-  gap: "0.5rem",
+  gap: "0.5rem"
 };

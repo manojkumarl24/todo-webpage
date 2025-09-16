@@ -1,44 +1,26 @@
-import { useReducer, useState } from "react";
-import { taskReducer } from "./reducers/taskReducer";
-import useLocalStorage from "./hooks/useLocalStorage";
+// src/App.jsx
+import React, { useState } from "react";
 import Layout from "./components/Layout";
 import TaskList from "./components/TaskList";
 import AddTaskDialog from "./components/AddTaskDialog";
 import TaskDialog from "./components/TaskDialog";
-import { ThemeToggle } from "./components/ThemeToggle";
-
-const STATUSES = ["PENDING", "FINISHED", "ON-TRACK"];
+import ThemeToggle from "./components/ThemeToggle";
+import useTasks from "./hooks/useTasks";
+import { SORT_OPTIONS } from "./constants";
 
 export default function App() {
-  const [tasks, dispatch] = useLocalStorage("tasks", [], taskReducer);
+  const [filterGroups, setFilterGroups] = useState([]);
+  const [filterStatuses, setFilterStatuses] = useState([]);
+  const [sortBy, setSortBy] = useState(SORT_OPTIONS.NEWEST);
+
+  const { tasks, visibleTasks, groups, addTask, updateTask, deleteTask, updateProgress } = useTasks({
+    sortBy,
+    filterGroups,
+    filterStatuses
+  });
 
   const [selectedTask, setSelectedTask] = useState(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
-
-  const [selectedGroups, setSelectedGroups] = useState([]); 
-  const [selectedStatuses, setSelectedStatuses] = useState([]); 
-
-  const groups = Array.from(
-    new Set(tasks.map((t) => (t.group ? String(t.group).trim() : "")).filter(Boolean))
-  );
-
-  const displayedTasks = tasks.filter((t) => {
-    const groupVal = t.group ? String(t.group) : "";
-    const statusVal = t.status ? String(t.status).toUpperCase() : "";
-    const groupMatch = selectedGroups.length === 0 || selectedGroups.includes(groupVal);
-    const statusMatch = selectedStatuses.length === 0 || selectedStatuses.includes(statusVal);
-    return groupMatch && statusMatch;
-  });
-
-  const onGroupSelectChange = (e) => {
-    const values = Array.from(e.target.selectedOptions, (opt) => opt.value);
-    setSelectedGroups(values);
-  };
-
-  const onStatusSelectChange = (e) => {
-    const values = Array.from(e.target.selectedOptions, (opt) => opt.value);
-    setSelectedStatuses(values);
-  };
 
   return (
     <Layout>
@@ -47,62 +29,52 @@ export default function App() {
           <h2>Tasks</h2>
           <div style={{ display: "flex", gap: "1rem" }}>
             <ThemeToggle />
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value={SORT_OPTIONS.NEWEST}>Newest</option>
+              <option value={SORT_OPTIONS.OLDEST}>Oldest</option>
+              <option value={SORT_OPTIONS.HIGH_PRIORITY}>High Priority</option>
+              <option value={SORT_OPTIONS.LOW_PRIORITY}>Low Priority</option>
+            </select>
             <button onClick={() => setShowAddDialog(true)}>Add Task</button>
           </div>
         </header>
 
-        <TaskList tasks={displayedTasks} dispatch={dispatch} onSelect={setSelectedTask} />
+        <TaskList tasks={visibleTasks} onSelect={(t) => setSelectedTask(t)} />
       </div>
 
       <div style={{ flex: 3, display: "flex", flexDirection: "column" }}>
-        {/* Group filter (user-defined groups only) */}
         <div style={{ flex: 1, borderBottom: "1px solid #ccc", padding: "1rem" }}>
           <h3>Filter by Group</h3>
           {groups.length === 0 ? (
-            <p style={{ color: "#666", fontSize: 13, marginTop: 6 }}>No groups yet — add tasks with a group</p>
+            <p style={{ color: "#666" }}>No groups yet — add tasks with a group</p>
           ) : (
-            <select
-              multiple
-              size={Math.min(6, groups.length)}
-              value={selectedGroups}
-              onChange={onGroupSelectChange}
-              style={{ width: "100%", marginTop: 8 }}
-            >
-              {groups.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
+            <select multiple value={filterGroups} onChange={(e) => setFilterGroups(Array.from(e.target.selectedOptions, o=>o.value))} style={{ width: "100%" }}>
+              {groups.map((g) => (<option key={g} value={g}>{g}</option>))}
             </select>
           )}
         </div>
 
         <div style={{ flex: 1, padding: "1rem" }}>
           <h3>Filter by Status</h3>
-          <select
-            multiple
-            size={Math.min(6, STATUSES.length)}
-            value={selectedStatuses}
-            onChange={onStatusSelectChange}
-            style={{ width: "100%", marginTop: 8 }}
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
+          <select multiple value={filterStatuses} onChange={(e) => setFilterStatuses(Array.from(e.target.selectedOptions, o=>o.value.toUpperCase()))} style={{ width: "100%" }}>
+            {["TO-DO","IN-PROGRESS","FINISHED","PENDING","LATE FINISH"].map((s)=>(
+              <option key={s} value={s}>{s}</option>
             ))}
           </select>
-
-          <div style={{ marginTop: 10, color: "#666", fontSize: 13 }}>
-            <div>Tip: hold Ctrl / Cmd to multi-select.</div>
-            <div>Leave any filter empty to include all.</div>
-          </div>
         </div>
       </div>
 
-      {showAddDialog && <AddTaskDialog dispatch={dispatch} onClose={() => setShowAddDialog(false)} />}
+      {showAddDialog && <AddTaskDialog onAddTask={addTask} onClose={() => setShowAddDialog(false)} />}
 
-      {selectedTask && <TaskDialog task={selectedTask} onClose={() => setSelectedTask(null)} dispatch={dispatch} />}
+      {selectedTask && (
+        <TaskDialog
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          updateProgress={updateProgress}
+          updateTask={updateTask}
+          deleteTask={deleteTask}
+        />
+      )}
     </Layout>
   );
 }
